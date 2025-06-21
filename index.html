@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploradores da Internet</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff; /* Light blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .btn {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 1.25rem; /* text-xl */
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn:hover:not(:disabled) {
+            background-color: #4f46e5; /* Indigo 600 */
+            transform: translateY(-2px);
+        }
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .btn:disabled {
+            background-color: #a5b4fc; /* Indigo 300 */
+            cursor: not-allowed;
+        }
+        .option-btn {
+            background-color: #a78bfa; /* Violet 400 */
+        }
+        .option-btn.correct {
+            background-color: #4ade80; /* Green 400 */
+        }
+        .option-btn.wrong {
+            background-color: #f87171; /* Red 400 */
+        }
+        .feedback-text {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .character-container {
+            font-size: 8rem; /* Large emoji/icon */
+            margin-top: 20px;
+            transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .character-idle {
+            transform: scale(1);
+            filter: grayscale(0);
+        }
+        .character-correct {
+            transform: scale(1.1) rotate(5deg);
+            filter: grayscale(0);
+            color: #16a34a; /* Green 700 */
+        }
+        .character-wrong {
+            transform: scale(0.9) rotate(-5deg);
+            filter: grayscale(1);
+            color: #dc2626; /* Red 700 */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+            }
+            .btn, .option-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            .feedback-text {
+                font-size: 1rem;
+            }
+            .character-container {
+                font-size: 6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="flex flex-col items-center justify-center gap-6">
+            <h1 class="text-5xl font-bold text-indigo-700 leading-tight">Exploradores da Internet</h1>
+            <p class="text-xl text-gray-700">Seja um herói digital e aprenda a navegar com segurança!</p>
+            <button id="start-game-btn" class="btn">Começar Jogo</button>
+            <div class="character-container">
+                <span id="character-idle">🚀</span>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden flex flex-col items-center justify-center gap-6">
+            <div class="flex justify-between items-center w-full">
+                <p class="text-xl font-semibold text-gray-600">Pergunta <span id="current-question-number">1</span> de <span id="total-questions"></span></p>
+                <p class="text-xl font-semibold text-gray-600">Pontuação: <span id="score-display">0</span></p>
+            </div>
+            <h2 id="question-text" class="text-3xl font-bold text-indigo-800 my-6"></h2>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                <button class="option-btn btn" data-index="0"></button>
+                <button class="option-btn btn" data-index="1"></button>
+                <button class="option-btn btn" data-index="2"></button>
+            </div>
+            <p id="feedback-text" class="feedback-text text-gray-700 min-h-[30px]"></p>
+            <div class="character-container">
+                <span id="character-quiz">🧐</span>
+            </div>
+            <button id="next-question-btn" class="btn mt-6" disabled>Próxima Pergunta</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden flex flex-col items-center justify-center gap-6">
+            <h2 class="text-4xl font-bold text-indigo-700">Quiz Finalizado!</h2>
+            <p class="text-2xl text-gray-800">Sua pontuação final é: <span id="final-score" class="text-green-600 font-bold">0</span></p>
+            <p id="result-message" class="text-xl text-gray-700"></p>
+            <div class="character-container">
+                <span id="character-result">🎉</span>
+            </div>
+            <button id="restart-game-btn" class="btn mt-6">Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const optionButtons = document.querySelectorAll('.option-btn');
+        const feedbackText = document.getElementById('feedback-text');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const resultMessage = document.getElementById('result-message');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+        const currentQuestionNumberSpan = document.getElementById('current-question-number');
+        const totalQuestionsSpan = document.getElementById('total-questions');
+        const characterQuiz = document.getElementById('character-quiz');
+        const characterResult = document.getElementById('character-result');
+
+        // Quiz data
+        const questions = [
+            {
+                question: "É seguro compartilhar sua senha com colegas?",
+                options: ["Sim, se forem meus amigos.", "Não, senhas são como escovas de dente, são pessoais.", "Só se for uma senha simples."],
+                correctAnswer: 1,
+                feedbackCorrect: "Muito bem! Sua senha é um segredo, não compartilhe com ninguém.",
+                feedbackWrong: "Ops! Senhas são pessoais e devem ser mantidas em segredo para sua segurança."
+            },
+            {
+                question: "O que você deve fazer se receber uma mensagem de um desconhecido?",
+                options: ["Responder e perguntar quem é.", "Bloquear e contar para um adulto de confiança.", "Compartilhar a mensagem com seus amigos."],
+                correctAnswer: 1,
+                feedbackCorrect: "Isso mesmo! Bloquear e avisar um adulto é a melhor atitude.",
+                feedbackWrong: "Cuidado! Nunca interaja com desconhecidos. Bloqueie e conte para um adulto."
+            },
+            {
+                question: "Você pode postar fotos de outras pessoas sem permissão?",
+                options: ["Sim, se a foto estiver engraçada.", "Não, é preciso pedir permissão para proteger a privacidade de todos.", "Só se for uma foto do meu animal de estimação."],
+                correctAnswer: 1,
+                feedbackCorrect: "Correto! Respeitar a privacidade dos outros é muito importante online.",
+                feedbackWrong: "Não! Sempre peça permissão antes de postar fotos de outras pessoas."
+            },
+            {
+                question: "Qual é a melhor forma de se comportar online?",
+                options: ["Falar o que quiser, mesmo que ofenda os outros.", "Ser educado e respeitoso, como na vida real.", "Fingir ser outra pessoa."],
+                correctAnswer: 1,
+                feedbackCorrect: "Perfeito! Gentileza e respeito fazem a internet ser um lugar melhor para todos.",
+                feedbackWrong: "Pense novamente. Ser educado e respeitoso é fundamental para uma boa convivência online."
+            },
+            {
+                question: "O que você faz se vir algo na internet que te deixa triste ou assustado?",
+                options: ["Ignoro e continuo navegando.", "Guardo para mim e não falo com ninguém.", "Peço ajuda a um adulto de confiança."],
+                correctAnswer: 2,
+                feedbackCorrect: "Certo! É muito importante falar com um adulto se algo te incomodar online.",
+                feedbackWrong: "Não guarde para você! Sempre procure um adulto de confiança para ajudar."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answeredThisQuestion = false; // To prevent multiple clicks on options for the same question
+
+        // Tone.js setup for sound effects
+        let clickSynth, correctSynth, wrongSynth;
+
+        window.onload = function() {
+            // Initialize Tone.js synths
+            clickSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.005, decay: 0.05, sustain: 0.1, release: 0.2 },
+            }).toDestination();
+
+            correctSynth = new Tone.Synth({
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0.1, release: 0.5 },
+            }).toDestination();
+
+            wrongSynth = new Tone.Synth({
+                oscillator: { type: "square" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.3 },
+            }).toDestination();
+
+            // Set total questions display
+            totalQuestionsSpan.textContent = questions.length;
+        };
+
+
+        /**
+         * Plays a sound effect for a button click.
+         */
+        function playClickSound() {
+            if (Tone.context.state !== 'running') {
+                Tone.start(); // Resume audio context on user interaction
+            }
+            clickSynth.triggerAttackRelease("C4", "8n");
+        }
+
+        /**
+         * Plays a sound effect for a correct answer.
+         */
+        function playCorrectSound() {
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            correctSynth.triggerAttackRelease("G5", "8n");
+        }
+
+        /**
+         * Plays a sound effect for a wrong answer.
+         */
+        function playWrongSound() {
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            wrongSynth.triggerAttackRelease("C3", "8n");
+        }
+
+        /**
+         * Starts the game, hiding the welcome screen and showing the quiz screen.
+         */
+        function startGame() {
+            playClickSound();
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreDisplay.textContent = score;
+            displayQuestion();
+        }
+
+        /**
+         * Displays the current question and its options.
+         * Resets UI elements for a new question.
+         */
+        function displayQuestion() {
+            answeredThisQuestion = false;
+            feedbackText.textContent = '';
+            nextQuestionBtn.disabled = true;
+            characterQuiz.textContent = '🧐'; // Reset character to idle state
+            characterQuiz.className = 'character-container character-idle'; // Reset character animation
+
+            // Reset button styles
+            optionButtons.forEach(button => {
+                button.classList.remove('correct', 'wrong');
+                button.disabled = false;
+            });
+
+            currentQuestionNumberSpan.textContent = currentQuestionIndex + 1;
+
+            const currentQuestion = questions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+
+            currentQuestion.options.forEach((option, index) => {
+                optionButtons[index].textContent = option;
+            });
+        }
+
+        /**
+         * Checks the selected answer against the correct answer.
+         * Updates score, provides feedback, and disables options.
+         * @param {Event} event - The click event object.
+         */
+        function checkAnswer(event) {
+            if (answeredThisQuestion) return; // Prevent multiple clicks
+
+            playClickSound();
+
+            answeredThisQuestion = true;
+            const selectedOptionIndex = parseInt(event.target.dataset.index);
+            const currentQuestion = questions[currentQuestionIndex];
+
+            // Disable all options after an answer is chosen
+            optionButtons.forEach(button => {
+                button.disabled = true;
+            });
+
+            if (selectedOptionIndex === currentQuestion.correctAnswer) {
+                score++;
+                scoreDisplay.textContent = score;
+                feedbackText.textContent = currentQuestion.feedbackCorrect;
+                event.target.classList.add('correct');
+                characterQuiz.textContent = '🥳'; // Correct answer emoji
+                characterQuiz.className = 'character-container character-correct';
+                playCorrectSound();
+            } else {
+                feedbackText.textContent = currentQuestion.feedbackWrong;
+                event.target.classList.add('wrong');
+                // Highlight the correct answer in green
+                optionButtons[currentQuestion.correctAnswer].classList.add('correct');
+                characterQuiz.textContent = '🙁'; // Wrong answer emoji
+                characterQuiz.className = 'character-container character-wrong';
+                playWrongSound();
+            }
+            nextQuestionBtn.disabled = false;
+        }
+
+        /**
+         * Advances to the next question or shows the final results.
+         */
+        function nextQuestion() {
+            playClickSound();
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                displayQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        /**
+         * Displays the final result screen with total score and message.
+         */
+        function showResult() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = `${score} de ${questions.length}`;
+
+            if (score === questions.length) {
+                resultMessage.textContent = "Parabéns, você é um verdadeiro Explorador da Internet! 🎉";
+                characterResult.textContent = '🌟'; // Perfect score emoji
+                characterResult.className = 'character-container character-correct'; // Use correct animation for perfect score
+            } else if (score >= questions.length / 2) {
+                resultMessage.textContent = "Muito bem! Você está no caminho certo para ser um expert digital. 😊";
+                characterResult.textContent = '👍';
+                characterResult.className = 'character-container character-idle'; // Normal animation
+            } else {
+                resultMessage.textContent = "Continue praticando! Cada erro é uma chance de aprender mais. 😉";
+                characterResult.textContent = '🤔';
+                characterResult.className = 'character-container character-wrong'; // Use wrong animation for lower score
+            }
+        }
+
+        /**
+         * Resets the game to the initial welcome screen.
+         */
+        function restartGame() {
+            playClickSound();
+            resultScreen.classList.add('hidden');
+            welcomeScreen.classList.remove('hidden');
+            characterQuiz.textContent = '🧐'; // Reset quiz character
+            characterQuiz.className = 'character-container character-idle';
+        }
+
+        // Event Listeners
+        startGameBtn.addEventListener('click', startGame);
+        nextQuestionBtn.addEventListener('click', nextQuestion);
+        restartGameBtn.addEventListener('click', restartGame);
+
+        optionButtons.forEach(button => {
+            button.addEventListener('click', checkAnswer);
+        });
+    </script>
+</body>
+</html>
